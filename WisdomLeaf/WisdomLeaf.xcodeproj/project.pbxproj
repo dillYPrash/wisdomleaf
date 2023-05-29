@@ -54,14 +54,38 @@
 		8462E43B2A24F64F00ECB16F /* WisdomLeaf */ = {
 			isa = PBXGroup;
 			children = (
+				8462E4502A24F97F00ECB16F /* Model */,
+				8462E4512A24F9B700ECB16F /* View */,
+				8462E4522A24F9BF00ECB16F /* Controller */,
 				8462E43C2A24F64F00ECB16F /* AppDelegate.swift */,
-				8462E4402A24F64F00ECB16F /* ViewController.swift */,
-				8462E4422A24F64F00ECB16F /* Main.storyboard */,
 				8462E4452A24F65100ECB16F /* Assets.xcassets */,
 				8462E4472A24F65100ECB16F /* LaunchScreen.storyboard */,
 				8462E44A2A24F65100ECB16F /* Info.plist */,
 			);
 			path = WisdomLeaf;
+			sourceTree = "<group>";
+		};
+		8462E4502A24F97F00ECB16F /* Model */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		8462E4512A24F9B700ECB16F /* View */ = {
+			isa = PBXGroup;
+			children = (
+				8462E4422A24F64F00ECB16F /* Main.storyboard */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		8462E4522A24F9BF00ECB16F /* Controller */ = {
+			isa = PBXGroup;
+			children = (
+				8462E4402A24F64F00ECB16F /* ViewController.swift */,
+			);
+			name = Controller;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
