@@ -12,37 +12,92 @@ import QuickLook
 class ViewController: UIViewController{
 
     var imageInfos = [ImageDetails]()
+    var checkBox = [Bool]()
+    var descriptionName: [String] = []
+    var pathName: [String] = []
     @IBOutlet weak var imageTable: UITableView!
     //webKit outlet for showing the screen using html response
     @IBOutlet weak var preView_view: UIView!
     @IBOutlet weak var web_Kit: WKWebView!
     @IBOutlet weak var cancel_btn: UIButton!
     
+   // let refreshControl = UIRefreshControl()
     let previewController = QLPreviewController()
     var previewItems: [PreviewItem] = []
-    
+    var pageNo = 0
     
     override func viewDidLoad() {
         super.viewDidLoad()
      
-        //WebKit related method and view hidden
+       
+        
         self.preView_view.isHidden = true
         self.cancel_btn.addTarget(self, action: #selector(cancel_btnaction), for: .touchUpInside)
         
-        
-        initializeURLSession()
+        pageNo = 1
+        initializeURLSession(pageNo: pageNo)
         imageTable.delegate = self
         imageTable.dataSource = self
         imageTable.register(UINib(nibName: "ImageCell", bundle: nil), forCellReuseIdentifier: "ImageCell")
         
+        let refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+        refreshControl.attributedTitle = NSAttributedString(string: "Refreshing...")
+        imageTable.addSubview(refreshControl)
+        
+    }
+    
+    // MARK: - Button Action and Alert Method
+
+    @objc func handleRefresh(_ sender: UIRefreshControl)  {
+        
+        for i in 0..<self.checkBox.count{
+            
+            if checkBox[i] == true{
+                
+                let description = self.imageInfos[i].author
+                let path = self.imageInfos[i].url
+                self.descriptionName.append(description!)
+                self.pathName.append(path!)
+            }
+            
+        }
+        
+        print("Data")
+        showAlert()
+        imageTable.setContentOffset(.zero, animated: true)
+        sender.endRefreshing()
     }
 
-//MARK:- Initialize webservice
+    private func showAlert() {
+          guard self.descriptionName.count > 0 else { return }
+        guard self.pathName.count > 0 else { return }
 
-    func initializeURLSession() {
+          let str1 = self.descriptionName.first
+        let str2 = self.pathName.first
+
+          let alert = UIAlertController(title: str1, message: str2, preferredStyle: .alert)
+          alert.modalPresentationStyle = UIModalPresentationStyle.overCurrentContext
+        //alert.addAction(UIAlertAction(title: "Yes", style: .default))
+          alert.addAction(UIAlertAction(title: "Ok", style: .cancel){ (action) in
+              print("pressed OK")
+              self.removeAndShowNextMessage()
+          })
+
+          UIApplication.shared.delegate?.window??.rootViewController?.present(alert, animated: true)
+      }
+    
+    func removeAndShowNextMessage() {
+        self.descriptionName.removeFirst()
+        self.pathName.removeFirst()
+        self.showAlert()
+    }
+// MARK: - Initialize webservice
+
+    func initializeURLSession(pageNo:Int) {
         let session = URLSession.shared
 
-        guard let url = URL(string: Constants.BASE_URL(page_no: 3)) else {
+        guard let url = URL(string: Constants.BASE_URL(page_no: pageNo)) else {
             fatalError("Invalid URL")
         }
 
@@ -65,6 +120,7 @@ class ViewController: UIViewController{
                         
                         for imageInfo in imageDetails {
                             self.imageInfos.append(imageInfo)
+                            self.checkBox.append(false)
                             print("Image ID: \(imageInfo.id ?? "")")
                             print("Author: \(imageInfo.author ?? "")")
                             print("URL: \(imageInfo.url ?? "")")
@@ -253,21 +309,33 @@ class ViewController: UIViewController{
 }
 
 
-//MARK:- UITableView Delegate and Datasource
+// MARK: -  UITableView Delegate and Datasource
 extension ViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        
         return imageInfos.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = imageTable.dequeueReusableCell(withIdentifier: "ImageCell", for: indexPath) as! ImageCell
         
-        cell.authorLabel.text = imageInfos[indexPath.row].author
+        cell.titleLabel.text = imageInfos[indexPath.row].author
+        cell.authorLabel.text = imageInfos[indexPath.row].url
         if let imageUrl = self.imageInfos[indexPath.row].download_url {
-            cell.rolledImage.imageFromURL(urlString: imageUrl)
+            //cell.rolledImage.imageFromURL(urlString: imageUrl)
+            cell.rolledImage.loadImageUsingCache(withUrl: imageUrl)
         } else {
             cell.rolledImage.image = UIImage(named: "dummyimage")
         }
+        
+        if checkBox[indexPath.row] == true{
+            cell.chcekBox.isHidden = false
+            cell.chcekBox.tintColor = .orange
+        }
+        else {
+            cell.chcekBox.isHidden = true
+        }
+        
         
         return cell
     }
@@ -275,19 +343,71 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        let tagId = indexPath.row
+//        let tagId = indexPath.row
+//
+//        let url = self.imageInfos[indexPath.row].download_url ?? ""
+//        let url1 = URL(string:url ?? "")
+//        quickLook(url: url1!)
+         
+            for i in 0..<self.checkBox.count{
+                if indexPath.row == i{
+                    if checkBox[i] == true{
+                        self.checkBox[i] = false
+                    }
+                    else {
+                        self.checkBox[i] = true
+                    }
+                    break
+                }
+                
+            }
+            
+        self.imageTable.reloadRows(at: [IndexPath(row: indexPath.row, section: indexPath.section)], with: .none)
         
-        let url = self.imageInfos[indexPath.row].download_url ?? ""
-        let url1 = URL(string:url ?? "")
-        quickLook(url: url1!)
     }
     
-   
+    
+    func scrollViewShouldScrollToTop(_ scrollView: UIScrollView) -> Bool {
+        
+        print("print\(scrollView.scrollsToTop)")
+        
+        return scrollView.scrollsToTop
+    }
+    
+    func scrollViewDidScrollToTop(_ scrollView: UIScrollView) {
+        
+        print("Top\(scrollView.scrollsToTop)")
+    }
+    
+    
+    func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+        let offset: CGPoint = scrollView.contentOffset
+        let bounds: CGRect = scrollView.bounds
+        let size: CGSize = scrollView.contentSize
+        let inset: UIEdgeInsets = scrollView.contentInset
+        let y: CGFloat = offset.y + bounds.size.height - inset.bottom
+        let h: CGFloat = size.height
+  
+        let reloadDistance: CGFloat = 10
+
+        if (y > h + reloadDistance) {
+            
+    if imageInfos.count > 1
+            {
+                self.pageNo += 1
+
+                self.initializeURLSession(pageNo: self.pageNo)
+
+            }
+  
+        }
+    }
+
     
 }
 
 
-// MARK:- Webkit Delegate
+// MARK: -  Webkit Delegate
 extension ViewController: WKUIDelegate, WKNavigationDelegate {
     
             func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
@@ -360,7 +480,7 @@ extension ViewController: WKUIDelegate, WKNavigationDelegate {
     
 }
 
-// MARK:- QLPreviewController Delegate and Datasource
+// MARK: -  QLPreviewController Delegate and Datasource
 
 extension ViewController: QLPreviewControllerDelegate, QLPreviewControllerDataSource{
     

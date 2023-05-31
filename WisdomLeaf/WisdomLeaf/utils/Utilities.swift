@@ -8,28 +8,38 @@
 import Foundation
 import UIKit
 
+let imageCache = NSCache<NSString, UIImage>()
 extension UIImageView {
-    public func imageFromURL(urlString: String) {
+    func loadImageUsingCache(withUrl urlString : String) {
+        let url = URL(string: urlString)
+        if url == nil {return}
+        self.image = nil
 
-        let activityIndicator = UIActivityIndicatorView(style: .gray)
-        activityIndicator.frame = CGRect.init(x: 0, y: 0, width: self.frame.size.width, height: self.frame.size.height)
-        activityIndicator.startAnimating()
-        if self.image == nil{
-            self.addSubview(activityIndicator)
+        // check cached image
+        if let cachedImage = imageCache.object(forKey: urlString as NSString)  {
+            self.image = cachedImage
+            return
         }
 
-        URLSession.shared.dataTask(with: NSURL(string: urlString)! as URL, completionHandler: { (data, response, error) -> Void in
+        let activityIndicator: UIActivityIndicatorView = UIActivityIndicatorView.init(style: .gray)
+        addSubview(activityIndicator)
+        activityIndicator.startAnimating()
+        activityIndicator.center = self.center
 
+        // if not, download image from url
+        URLSession.shared.dataTask(with: url!, completionHandler: { (data, response, error) in
             if error != nil {
-                print(error ?? "No Error")
+                print(error!)
                 return
             }
-            DispatchQueue.main.async(execute: { () -> Void in
-                let image = UIImage(data: data!)
-                activityIndicator.removeFromSuperview()
-                self.image = image
-                print("got some data")
-            })
+
+            DispatchQueue.main.async {
+                if let image = UIImage(data: data!) {
+                    imageCache.setObject(image, forKey: urlString as NSString)
+                    self.image = image
+                    activityIndicator.removeFromSuperview()
+                }
+            }
 
         }).resume()
     }

@@ -9,6 +9,7 @@ import UIKit
 
 class ImageCell: UITableViewCell {
 
+    @IBOutlet weak var chcekBox: UIImageView!
     @IBOutlet weak var baseView: UIView!
     @IBOutlet weak var rolledImage: UIImageView!
     @IBOutlet weak var titleLabel: UILabel!
